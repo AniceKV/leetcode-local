@@ -1,0 +1,11 @@
+{
+  "name": "leetcode-companywise-questions-explorer",
+  "version": "1.0.0",
+  "description": "An interactive local dashboard for browsing LeetCode company-wise questions.",
+  "scripts": {
+    "dev": "vite --port 5173"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}

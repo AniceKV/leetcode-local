@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeetCode Company-wise Question Explorer</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (via CDN for sleek icons) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PapaParse for CSV Parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <i data-lucide="terminal"></i>
+        </div>
+        <div class="logo-text">
+          <h1>LeetCode <span>Companywise</span></h1>
+          <p>Interactive Interview Database</p>
+        </div>
+      </div>
+      <div class="header-stats" id="global-stats">
+        <button id="sync-solved-btn" class="stat-pill sync-pill" title="Synchronize your LeetCode solved status">
+          <i data-lucide="refresh-cw"></i>
+          <span id="sync-solved-text">Sync Solved</span>
+        </button>
+        <div class="stat-pill">
+          <i data-lucide="building-2"></i>
+          <span id="total-companies-count">656</span> Companies
+        </div>
+        <div class="stat-pill update-pill">
+          <i data-lucide="calendar"></i>
+          Updated May 24, 2026
+        </div>
+      </div>
+    </header>
+
+    <div class="app-layout">
+      <!-- Sidebar: Company list -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>Explorer</h2>
+          <p class="sidebar-subtitle">Select a company to browse</p>
+        </div>
+
+        <div class="sidebar-controls">
+          <!-- Search box -->
+          <div class="search-box">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="company-search" placeholder="Search companies..." autocomplete="off">
+            <button id="clear-search-btn" class="clear-btn" style="display: none;">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+
+          <!-- Sorting selection -->
+          <div class="sorting-controls">
+            <span class="sort-label">Sort:</span>
+            <button id="sort-name-btn" class="sort-toggle active" data-sort="name">
+              <span>Name</span>
+              <i data-lucide="arrow-up-a-z"></i>
+            </button>
+            <button id="sort-count-btn" class="sort-toggle" data-sort="count">
+              <span>Questions</span>
+              <i data-lucide="arrow-down-narrow-wide"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable list of companies -->
+        <div class="company-list-wrapper">
+          <ul id="company-list" class="company-list">
+            <!-- Dynamic elements will be inserted here -->
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading directory...</p>
+            </div>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Main Panel: Dashboard and Questions Table -->
+      <main class="main-panel">
+        <!-- Empty State (No company selected) -->
+        <div id="empty-state" class="empty-state">
+          <div class="empty-state-graphic">
+            <div class="pulse-ring"></div>
+            <i data-lucide="code-2"></i>
+          </div>
+          <h3>Select a Company</h3>
+          <p>Choose a company from the sidebar to view interview questions, stats, difficulty spreads, and frequencies.</p>
+          <div class="quick-hints">
+            <div class="hint-item">
+              <i data-lucide="search"></i>
+              <span>Search across 650+ tech companies</span>
+            </div>
+            <div class="hint-item">
+              <i data-lucide="filter"></i>
+              <span>Filter questions by difficulty and recency</span>
+            </div>
+            <div class="hint-item">
+              <i data-lucide="sliders-horizontal"></i>
+              <span>Sort questions by frequency and acceptance rate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard View (Visible when company selected) -->
+        <div id="dashboard-view" class="dashboard-view" style="display: none;">
+          <!-- Company Info & Timeframe tabs -->
+          <section class="dashboard-header">
+            <div class="company-profile">
+              <div class="company-avatar" id="company-avatar">G</div>
+              <div>
+                <h2 id="selected-company-name">Google</h2>
+                <p class="company-path" id="company-path">leetcode-companywise/google</p>
+              </div>
+            </div>
+
+            <!-- Timeframe selector -->
+            <div class="timeframe-selector" id="timeframe-tabs">
+              <button class="tab-btn active" data-timeframe="thirty-days">30 Days</button>
+              <button class="tab-btn" data-timeframe="three-months">3 Months</button>
+              <button class="tab-btn" data-timeframe="six-months">6 Months</button>
+              <button class="tab-btn" data-timeframe="more-than-six-months">Older than 6M</button>
+              <button class="tab-btn" data-timeframe="all">All Questions</button>
+            </div>
+          </section>
+
+          <!-- Analytics Summary Cards -->
+          <section class="analytics-cards">
+            <!-- Card 1: Total questions -->
+            <div class="analytics-card">
+              <div class="card-icon">
+                <i data-lucide="database"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Total Questions</span>
+                <span class="card-val" id="stats-total-count">0</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Difficulty breakdown -->
+            <div class="analytics-card difficulty-card">
+              <div class="card-icon">
+                <i data-lucide="pie-chart"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Difficulty Distribution</span>
+                <div class="difficulty-bar">
+                  <div id="bar-easy" class="bar-segment easy" style="width: 0%" title="Easy: 0%"></div>
+                  <div id="bar-medium" class="bar-segment medium" style="width: 0%" title="Medium: 0%"></div>
+                  <div id="bar-hard" class="bar-segment hard" style="width: 0%" title="Hard: 0%"></div>
+                </div>
+                <div class="difficulty-legend">
+                  <span class="legend-item easy">Easy: <span id="count-easy">0</span></span>
+                  <span class="legend-item medium">Medium: <span id="count-medium">0</span></span>
+                  <span class="legend-item hard">Hard: <span id="count-hard">0</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: Avg Acceptance -->
+            <div class="analytics-card">
+              <div class="card-icon">
+                <i data-lucide="percent"></i>
+              </div>
+              <div class="card-content">
+                <span class="card-label">Avg. Acceptance</span>
+                <span class="card-val" id="stats-avg-acceptance">0.0%</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Interactive Questions Explorer -->
+          <section class="questions-explorer">
+            <div class="explorer-header">
+              <h3>Interview Questions</h3>
+              
+              <!-- Filter tools -->
+              <div class="explorer-filters">
+                <!-- Question Search -->
+                <div class="question-search-box">
+                  <i data-lucide="search"></i>
+                  <input type="text" id="question-search" placeholder="Filter by Title or ID...">
+                </div>
+
+                <!-- Difficulty filter dropdown -->
+                <div class="filter-dropdown">
+                  <i data-lucide="filter"></i>
+                  <select id="difficulty-filter">
+                    <option value="all">All Difficulties</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+
+                <!-- Topic Tag filter dropdown -->
+                <div class="filter-dropdown">
+                  <i data-lucide="tag"></i>
+                  <select id="tag-filter">
+                    <option value="all">All Tags</option>
+                  </select>
+                </div>
+
+                <!-- Status filter dropdown -->
+                <div class="filter-dropdown">
+                  <i data-lucide="check-circle-2"></i>
+                  <select id="status-filter">
+                    <option value="all">All Statuses</option>
+                    <option value="solved">Solved Only</option>
+                    <option value="unsolved">Unsolved Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="table-container">
+              <table class="questions-table" id="questions-table">
+                <thead>
+                  <tr>
+                    <th class="col-solved" style="width: 45px;"></th>
+                    <th class="sortable col-id" data-col="id">
+                      <span>ID</span>
+                      <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                    </th>
+                    <th class="sortable col-title" data-col="title">
+                      <span>Title</span>
+                      <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                    </th>
+                    <th class="sortable col-diff" data-col="difficulty">
+                      <span>Difficulty</span>
+                      <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                    </th>
+                    <th class="sortable col-accept" data-col="acceptance">
+                      <span>Acceptance</span>
+                      <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                    </th>
+                    <th class="sortable col-freq" data-col="frequency">
+                      <span>Frequency</span>
+                      <i data-lucide="chevrons-up-down" class="sort-icon"></i>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="table-body">
+                  <!-- Dynamic table rows go here -->
+                </tbody>
+              </table>
+              
+              <!-- Table Loading State -->
+              <div id="table-loading" class="table-overlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading questions data...</p>
+              </div>
+
+              <!-- Table Empty State -->
+              <div id="table-empty" class="table-overlay" style="display: none;">
+                <i data-lucide="inbox"></i>
+                <p>No questions match your filter criteria.</p>
+              </div>
+            </div>
+
+            <!-- Pagination footer -->
+            <footer class="explorer-footer">
+              <div class="pagination-info" id="pagination-info">
+                Showing 0 to 0 of 0 questions
+              </div>
+              <div class="pagination-controls">
+                <!-- Page size selection -->
+                <div class="page-size-selector">
+                  <span>Show</span>
+                  <select id="page-size">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <!-- Pagination buttons -->
+                <div class="pagination-buttons" id="pagination-buttons">
+                  <button id="prev-page-btn" class="page-nav-btn" disabled>
+                    <i data-lucide="chevron-left"></i>
+                  </button>
+                  <div class="page-numbers" id="page-numbers">
+                    <!-- Page numbers inserted dynamically -->
+                  </div>
+                  <button id="next-page-btn" class="page-nav-btn" disabled>
+                    <i data-lucide="chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </footer>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Sync Modal -->
+  <div id="sync-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+      <header class="modal-header">
+        <h3>LeetCode Solved Sync</h3>
+        <button id="close-modal-btn" class="modal-close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </header>
+      
+      <div class="modal-body">
+        <p class="modal-desc">Import your solved question status to filter and view progress dashboard metrics locally.</p>
+        
+        <div class="sync-options-tabs">
+          <button class="modal-tab-btn active" id="modal-tab-auto-btn">Option A: Auto Sync</button>
+          <button class="modal-tab-btn" id="modal-tab-manual-btn">Option B: Manual Script</button>
+        </div>
+        
+        <!-- Tab Content: Auto Sync -->
+        <div id="sync-tab-auto" class="modal-tab-content">
+          <div class="input-group">
+            <label for="leetcode-cookie">LEETCODE_SESSION Cookie</label>
+            <input type="password" id="leetcode-cookie" placeholder="Paste LEETCODE_SESSION cookie here...">
+            <span class="input-hint">Retrieve this cookie from the DevTools Application/Storage tab on leetcode.com. It is only forwarded to your local server to fetch solved questions.</span>
+          </div>
+          <button id="auto-sync-btn" class="modal-submit-btn">
+            <i data-lucide="refresh-cw"></i>
+            <span>Start Syncing</span>
+          </button>
+        </div>
+        
+        <!-- Tab Content: Manual Script -->
+        <div id="sync-tab-manual" class="modal-tab-content" style="display: none;">
+          <p class="modal-instruction">1. Open <a href="https://leetcode.com/problems/all" target="_blank" rel="noopener noreferrer">leetcode.com/problems/all</a> in another tab.</p>
+          <p class="modal-instruction">2. Open your browser console (F12 -> Console), paste the following snippet, and press Enter:</p>
+          <div class="code-snippet-box">
+            <code id="manual-console-code">fetch('https://leetcode.com/api/problems/all/').then(r=>r.json()).then(d=>d.stat_status_pairs.filter(p=>p.status==='ac').map(p=>p.stat.frontend_question_id)).then(ids=>console.log(JSON.stringify(ids)))</code>
+            <button id="copy-snippet-btn" class="copy-snippet-btn" title="Copy to clipboard">
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
+          <p class="modal-instruction">3. Copy the output array of numbers (e.g. <code>[1, 2, 45]</code>) and paste it below:</p>
+          <div class="input-group">
+            <textarea id="manual-solved-ids" placeholder="Paste array of solved question IDs here... (e.g. [1, 2, 3])"></textarea>
+          </div>
+          <button id="manual-sync-btn" class="modal-submit-btn">
+            <i data-lucide="save"></i>
+            <span>Import Questions</span>
+          </button>
+        </div>
+        
+        <div id="sync-status-msg" class="sync-status-msg" style="display: none;"></div>
+      </div>
+      
+      <footer class="modal-footer" id="modal-footer-actions" style="display: none;">
+        <button id="clear-sync-btn" class="modal-danger-btn">
+          <i data-lucide="trash-2"></i>
+          <span>Clear Synced Data</span>
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/app.js" type="module"></script>
+  <script>
+    // Initialize icons after page loads
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
