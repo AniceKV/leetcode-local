@@ -84,6 +84,11 @@ const elements = {
 // Start the application
 async function init() {
   setupEventListeners();
+  // Populate manual console snippet via JS to avoid HTML parse errors from angle brackets
+  const snippetEl = document.getElementById('manual-console-code');
+  if (snippetEl) {
+    snippetEl.textContent = `fetch('/api/problems/all/').then(r=>r.json()).then(d=>{let ids=d.stat_status_pairs.filter(p=>p.status==='ac').map(p=>p.stat.frontend_question_id);console.log('Found '+ids.length+' solved');console.log(JSON.stringify(ids));try{copy(JSON.stringify(ids));console.log('Copied!')}catch(e){}}).catch(e=>console.error('Error:',e))`;
+  }
   loadSyncedSolvedQuestions();
   await loadQuestionTags();
   await loadCompaniesMetadata();
@@ -1177,80 +1182,7 @@ function setupEventListeners() {
     });
   }
 
-  // Switch tabs in modal
-  if (elements.modalTabAutoBtn && elements.modalTabManualBtn) {
-    elements.modalTabAutoBtn.addEventListener('click', () => {
-      elements.modalTabAutoBtn.classList.add('active');
-      elements.modalTabManualBtn.classList.remove('active');
-      if (elements.syncTabAuto) elements.syncTabAuto.style.display = 'flex';
-      if (elements.syncTabManual) elements.syncTabManual.style.display = 'none';
-      if (elements.syncStatusMsg) elements.syncStatusMsg.style.display = 'none';
-    });
 
-    elements.modalTabManualBtn.addEventListener('click', () => {
-      elements.modalTabManualBtn.classList.add('active');
-      elements.modalTabAutoBtn.classList.remove('active');
-      if (elements.syncTabManual) elements.syncTabManual.style.display = 'flex';
-      if (elements.syncTabAuto) elements.syncTabAuto.style.display = 'none';
-      if (elements.syncStatusMsg) elements.syncStatusMsg.style.display = 'none';
-    });
-  }
-
-  // Auto sync form submission
-  if (elements.autoSyncBtn) {
-    elements.autoSyncBtn.addEventListener('click', async () => {
-      const cookieVal = elements.leetcodeCookie.value.trim();
-      if (!cookieVal) {
-        showSyncStatus('Please paste your LEETCODE_SESSION cookie.', 'error');
-        return;
-      }
-
-      showSyncStatus('Syncing with LeetCode API... Please wait.', 'info');
-      elements.autoSyncBtn.disabled = true;
-
-      try {
-        const response = await fetch('/leetcode-api/api/problems/all/', {
-          headers: {
-            'X-LeetCode-Cookie': cookieVal
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`LeetCode server responded with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data || !data.stat_status_pairs) {
-          throw new Error('Invalid response structure received from LeetCode API.');
-        }
-
-        const solvedIds = data.stat_status_pairs
-          .filter(p => p.status === 'ac')
-          .map(p => Number(p.stat.frontend_question_id));
-
-        localStorage.setItem('leetcode_solved_ids', JSON.stringify(solvedIds));
-        loadSyncedSolvedQuestions();
-        
-        // Refresh dashboard view
-        calculateDashboardStats();
-        applyFiltersAndSort();
-
-        showSyncStatus(`Successfully synchronized ${solvedIds.length} solved questions!`, 'success');
-        elements.leetcodeCookie.value = '';
-
-        // Auto close modal after delay
-        setTimeout(() => {
-          closeSyncModal();
-        }, 1500);
-
-      } catch (err) {
-        console.error('Auto sync error:', err);
-        showSyncStatus(`Sync failed: ${err.message}. Double check your cookie.`, 'error');
-      } finally {
-        elements.autoSyncBtn.disabled = false;
-      }
-    });
-  }
 
   // Copy manual console snippet to clipboard
   if (elements.copySnippetBtn) {

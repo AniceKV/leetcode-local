@@ -319,35 +319,17 @@
       <div class="modal-body">
         <p class="modal-desc">Import your solved question status to filter and view progress dashboard metrics locally.</p>
         
-        <div class="sync-options-tabs">
-          <button class="modal-tab-btn active" id="modal-tab-auto-btn">Option A: Auto Sync</button>
-          <button class="modal-tab-btn" id="modal-tab-manual-btn">Option B: Manual Script</button>
-        </div>
-        
-        <!-- Tab Content: Auto Sync -->
-        <div id="sync-tab-auto" class="modal-tab-content">
-          <div class="input-group">
-            <label for="leetcode-cookie">LEETCODE_SESSION Cookie</label>
-            <input type="password" id="leetcode-cookie" placeholder="Paste LEETCODE_SESSION cookie here...">
-            <span class="input-hint">Retrieve this cookie from the DevTools Application/Storage tab on leetcode.com. It is only forwarded to your local server to fetch solved questions.</span>
-          </div>
-          <button id="auto-sync-btn" class="modal-submit-btn">
-            <i data-lucide="refresh-cw"></i>
-            <span>Start Syncing</span>
-          </button>
-        </div>
-        
-        <!-- Tab Content: Manual Script -->
-        <div id="sync-tab-manual" class="modal-tab-content" style="display: none;">
-          <p class="modal-instruction">1. Open <a href="https://leetcode.com/problems/all" target="_blank" rel="noopener noreferrer">leetcode.com/problems/all</a> in another tab.</p>
+        <!-- Sync Instructions -->
+        <div class="sync-instructions">
+          <p class="modal-instruction">1. Open <a href="https://leetcode.com/problemset/" target="_blank" rel="noopener noreferrer">leetcode.com/problemset</a> in another tab (make sure you are logged in).</p>
           <p class="modal-instruction">2. Open your browser console (F12 -> Console), paste the following snippet, and press Enter:</p>
           <div class="code-snippet-box">
-            <code id="manual-console-code">fetch('https://leetcode.com/api/problems/all/').then(r=>r.json()).then(d=>d.stat_status_pairs.filter(p=>p.status==='ac').map(p=>p.stat.frontend_question_id)).then(ids=>console.log(JSON.stringify(ids)))</code>
+            <code id="manual-console-code"></code>
             <button id="copy-snippet-btn" class="copy-snippet-btn" title="Copy to clipboard">
               <i data-lucide="copy"></i>
             </button>
           </div>
-          <p class="modal-instruction">3. Copy the output array of numbers (e.g. <code>[1, 2, 45]</code>) and paste it below:</p>
+          <p class="modal-instruction">3. Wait for progress logs to finish. The result auto-copies to your clipboard. Paste below (or Ctrl+V):</p>
           <div class="input-group">
             <textarea id="manual-solved-ids" placeholder="Paste array of solved question IDs here... (e.g. [1, 2, 3])"></textarea>
           </div>
